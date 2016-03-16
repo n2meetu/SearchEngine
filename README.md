@@ -1,2 +1,6 @@
 # Search Engine Exs
-1. Evaluation of 3 search engines
+
+  /Material/*
+    data collected
+  /Evaluation/*
+    the corresponding results of /Material/*

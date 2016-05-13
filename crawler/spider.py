@@ -8,11 +8,14 @@ class Spider:
 	current = ""
 	stack = []
 	failedList = []
+	linkTable = []
+	id2Link = [""];
 	hashMap = {}
+	linkCnt = 1;
 
 	downloadPath = './mirrors/'
 
-	banned_files = ['css','jsp','mp4','xls']
+	banned_files = ['css','jsp','mp4','xls','jpg','JPG','png','PNG','bmp','BMP']
 
 	pHref = re.compile(r'href="(?P<href>[^"]*)"');
 	headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/600.5.17 (KHTML, like Gecko) Version/8.0.5 Safari/600.5.17"}
@@ -20,7 +23,9 @@ class Spider:
 	def __init__(self, seed):
 		self.current = seed;
 		self.stack.append(seed)
-		self.hashMap[seed]=True
+		self.hashMap[seed] = 1
+		self.id2Link.append(seed)
+		self.linkCnt+=1;
 		pass
 
 	def filter(self,link):
@@ -29,12 +34,7 @@ class Spider:
 		return True
 
 	def isRelativePath(self,link):
-                if "cic.tsinghua." in link:
-                        return True
-                elif "info.tsinghua." in link:
-                        return True
-                else:
-                        return False
+		return True
 
 	def extractLinks(self, text):
 		# print "GetLink"
@@ -55,9 +55,14 @@ class Spider:
 		except Exception,e:
 			self.failedList.append(url)
 			return
+
+
+		currentID = self.hashMap[url]
+		pointTo = []
+
 		# text = urllib2.urlopen(url).read()
 		# print text
-		time.sleep(0.2)
+		time.sleep(0.1)
 
 		# print text
 		# text = 'window.location.href="/publish/thunews/index.html",href="http://www.baidu.com"'
@@ -85,16 +90,25 @@ class Spider:
 			else:
 				path = url[7:pos]
 		links = self.extractLinks(text)
-		print "++++Base:"+base
+		# print "++++Base:"+base
 		for link in links:
 			if(link[0]=='/'):
-				print link
+				# print link
 				link = base + link
 			link = link.split(';')[0]
             
-			if(self.filter(link) == True and self.isRelativePath(link) == True and 'tsinghua' in link and self.hashMap.get(link,False) == False):
-				self.hashMap[link] = True
-				self.stack.append(link)
+			if(self.filter(link) == True and self.isRelativePath(link) == True and 'tsinghua' in link and self.hashMap.get(link,0) == 0):
+				self.hashMap[link] = self.linkCnt;
+				self.stack.append(link);
+				self.linkCnt+=1;
+				self.id2Link.append(link)
+			
+			if(self.hashMap.get(link,0) != 0):
+				pointTo.append(self.hashMap[link])
+
+
+		self.linkTable.append(pointTo)
+
 		try:
 			if(os.path.exists(self.downloadPath + path)):
 				pass
@@ -118,6 +132,12 @@ class Spider:
 		with open('fault.list','w') as file:
 			for line in self.failedList:
 				file.write(line + '\n')
+		with open('id2Url.txt','w') as file:
+			for line in self.id2Link:
+				file.write(line + '\n')
+		with open('link_table.txt','w') as file:
+			for line in self.linkTable:
+				file.write(str(line)+'\n')
 		pass
 
 	def run(self):
@@ -130,14 +150,14 @@ class Spider:
 			# del self.stack[0]
 			self.decompose(url)
 			cnt += 1;
-			if(cnt % 5000 == 0):
+			if(cnt % 500 == 0):
 				self.save()
 		self.save()
 
 
 
 if __name__ == "__main__":
-	seed = "http://postinfo.tsinghua.edu.cn/f/bangongtongzhi/more?field_bgtz_fl_tid=All"
+	seed = "http://news.tsinghua.edu.cn"
 
 	spider = Spider(seed);
 

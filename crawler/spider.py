@@ -12,7 +12,7 @@ class Spider:
 
 	downloadPath = './mirrors/'
 
-	banned_files = ['jpg','png','css','jsp']
+	banned_files = ['css','jsp','mp4','xls']
 
 	pHref = re.compile(r'href="(?P<href>[^"]*)"');
 	headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/600.5.17 (KHTML, like Gecko) Version/8.0.5 Safari/600.5.17"}
@@ -29,7 +29,12 @@ class Spider:
 		return True
 
 	def isRelativePath(self,link):
-		return True
+                if "cic.tsinghua." in link:
+                        return True
+                elif "info.tsinghua." in link:
+                        return True
+                else:
+                        return False
 
 	def extractLinks(self, text):
 		# print "GetLink"
@@ -37,7 +42,7 @@ class Spider:
 		p = re.compile(r'href=\"(?P<href>[^\"]+)\"');
 		# print p.findall(text)
 		# return p.match(text).group('href')
-
+		#print p.findall(text)
 		return p.findall(text)
 
 
@@ -51,7 +56,8 @@ class Spider:
 			self.failedList.append(url)
 			return
 		# text = urllib2.urlopen(url).read()
-		time.sleep(1)
+		# print text
+		time.sleep(0.2)
 
 		# print text
 		# text = 'window.location.href="/publish/thunews/index.html",href="http://www.baidu.com"'
@@ -78,33 +84,39 @@ class Spider:
 				print 'pos=-1:' + url
 			else:
 				path = url[7:pos]
-
-		if(os.path.exists(self.downloadPath + path)):
-			pass
-		else:
-			os.makedirs(self.downloadPath + path)
-
-		print "Path:"+ path + '/'
-		print "File:"+ filename
-		with open(self.downloadPath + path + '/' + filename,'w') as file:
-			# for line in text:
-			file.writelines(text);
-
 		links = self.extractLinks(text)
+		print "++++Base:"+base
 		for link in links:
 			if(link[0]=='/'):
+				print link
 				link = base + link
+			link = link.split(';')[0]
+            
 			if(self.filter(link) == True and self.isRelativePath(link) == True and 'tsinghua' in link and self.hashMap.get(link,False) == False):
 				self.hashMap[link] = True
 				self.stack.append(link)
+		try:
+			if(os.path.exists(self.downloadPath + path)):
+				pass
+			else:
+				os.makedirs(self.downloadPath + path)
+
+			# print "Path:"+ path + '/'
+			# print "File:"+ filename
+			with open(self.downloadPath + path + '/' + filename,'w') as file:
+				# for line in text:
+				file.writelines(text);
+		except Exception,e:
+			self.failedList.append(url)
+			return
 		
 
 	def save(self):
 		with open('stack.list','w') as file:
-			for line in stack:
+			for line in self.stack:
 				file.write(line + '\n')
 		with open('fault.list','w') as file:
-			for line in failedList:
+			for line in self.failedList:
 				file.write(line + '\n')
 		pass
 
@@ -112,19 +124,20 @@ class Spider:
 		cnt = 0;
 		url = ""
 		while(len(self.stack)>0):
+			print cnt
 			url = self.stack.pop()
 			# url = self.stack[0]
 			# del self.stack[0]
 			self.decompose(url)
 			cnt += 1;
-			cnt %= 10000
-			if(cnt == 0):
+			if(cnt % 5000 == 0):
 				self.save()
+		self.save()
 
 
 
 if __name__ == "__main__":
-	seed = "http://news.tsinghua.edu.cn/"
+	seed = "http://postinfo.tsinghua.edu.cn/f/bangongtongzhi/more?field_bgtz_fl_tid=All"
 
 	spider = Spider(seed);
 

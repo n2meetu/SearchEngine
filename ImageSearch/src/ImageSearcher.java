@@ -18,6 +18,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.wltea.analyzer.lucene.IKAnalyzer;
+import net.paoding.analysis.analyzer.PaodingAnalyzer;
 
 public class ImageSearcher {
 	private IndexReader reader;
@@ -26,7 +27,8 @@ public class ImageSearcher {
 	private float avgLength=1.0f;
 	
 	public ImageSearcher(String indexdir){
-		analyzer = new IKAnalyzer();
+		// analyzer = new IKAnalyzer();
+		analyzer = new PaodingAnalyzer();
 		try{
 			reader = IndexReader.open(FSDirectory.open(new File(indexdir)));
 			searcher = new IndexSearcher(reader);

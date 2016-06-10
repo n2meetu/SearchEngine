@@ -1,3 +1,5 @@
+#coding=utf-8
+
 from HTMLParser import HTMLParser
 import os
  
@@ -18,6 +20,10 @@ class MyHTMLParser(HTMLParser):
         self.type = self.type[0:size-1]
             
     def handle_data(self, data):
+        if 'script' in self.type:
+            return
+        if '"' in data:
+            return
         for item in self.list:
             if item in self.type:
                 self.result[item] = self.result[item] + data
@@ -45,8 +51,7 @@ def do_transform(input, id):
     res = '<pic id="' + str(id) + '" ' + res + 'locate="' + input + '" />\n'
     return res
 
-if __name__ == "__main__":
-    #transform('20110225231207437837642_.html','test_out')
+def do_work():
     res = ""
     id = 0
     for tri in os.walk('news.tsinghua.edu.cn'):
@@ -61,4 +66,24 @@ if __name__ == "__main__":
     res = '<?xml version="1.0" encoding="utf-8"?>\n<pics>\n<category name="sogou">\n' + res + '</category>\n</pics>'
     file = open('out.xml','w')
     file.write(res)
+    
+    
+def do_work_pdf():
+    res = ""
+    id = 0
+    for tri in os.walk('news.tsinghua.edu.cn'):
+        for file in tri[2]:
+            if ".pdf" in file:
+                path = tri[0] + '\\' + file
+                try:
+                    res = res + do_transform(path,id)
+                    id = id + 1
+                except:
+                    pass
+    res = '<?xml version="1.0" encoding="utf-8"?>\n<pics>\n<category name="sogou">\n' + res + '</category>\n</pics>'
+    file = open('out.xml','w')
+    file.write(res)
+    
+if __name__ == "__main__":
+    do_work()
                     

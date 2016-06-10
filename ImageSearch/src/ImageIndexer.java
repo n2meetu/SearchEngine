@@ -19,7 +19,13 @@ import javax.xml.parsers.*;
 public class ImageIndexer {
 	private Analyzer analyzer; 
     private IndexWriter indexWriter;
-    private float averageLength=1.0f;
+    private float titleLength=1.0f;
+    private float h1Length=1.0f;
+    private float h2Length=1.0f;
+    private float h3Length=1.0f;
+    private float h4Length=1.0f;
+    private float h5Length=1.0f;
+    private float h6Length=1.0f;
     
     public ImageIndexer(String indexDir){
     	analyzer = new IKAnalyzer();

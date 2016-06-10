@@ -41,8 +41,8 @@ def transform(input):
     return hp.link()
     
 def do_transform(input, id):
-    str = transform(input)
-    res = '<pic id="' + str(id) + '" ' + str + 'locate="' + input + '" />\n'
+    res = transform(input)
+    res = '<pic id="' + str(id) + '" ' + res + 'locate="' + input + '" />\n'
     return res
 
 if __name__ == "__main__":
@@ -51,10 +51,10 @@ if __name__ == "__main__":
     id = 0
     for tri in os.walk('news.tsinghua.edu.cn'):
         for file in tri[2]:
-            if ".html" in file or ".jsp" in file:
-                str = tri[0] + '\\' + file
+            if ".html" in file or ".jsp" in file or ".php" in file:
+                path = tri[0] + '\\' + file
                 try:
-                    res = res + do_transform(str,id)
+                    res = res + do_transform(path,id)
                     id = id + 1
                 except:
                     pass

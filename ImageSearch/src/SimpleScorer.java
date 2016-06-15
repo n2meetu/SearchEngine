@@ -9,6 +9,8 @@ import org.apache.lucene.search.*;
  */
 final class SimpleScorer extends Scorer {
 
+	private IndexReader indexReader;
+
 	private float idf;
 	private final TermDocs termDocs;
 	private final byte[] norms;
@@ -25,7 +27,7 @@ final class SimpleScorer extends Scorer {
 	private final float[] scoreCache = new float[SCORE_CACHE_SIZE];
 
 	private float avgLength;
-	private float K1 = 2.0f;
+	private float K1 = 1.2f;
 	private float b = 0.75f;
 
 	public void setBM25Params(float aveParam) {
@@ -53,14 +55,16 @@ final class SimpleScorer extends Scorer {
 	 *            <code>Term</code>.
 	 */
 	SimpleScorer(Weight weight, TermDocs td, Similarity similarity,
-			byte[] norms, float idfValue, float avg) {
+			byte[] norms, float idfValue, float avg,IndexReader indexReader) {
 		super(similarity, weight);
 
+		System.out.println("Termdocs:"+td.doc());
 		this.termDocs = td;
 		this.norms = norms;
 		this.weightValue = weight.getValue();
 		this.idf = idfValue;
 		this.avgLength = avg;
+		this.indexReader = indexReader;
 
 		for (int i = 0; i < SCORE_CACHE_SIZE; i++)
 			scoreCache[i] = getSimilarity().tf(i) * weightValue;
@@ -109,7 +113,11 @@ final class SimpleScorer extends Scorer {
 	 * Advances to the next document matching the query. <br>
 	 * The iterator over the matching documents is buffered using
 	 * {@link TermDocs#read(int[],int[])}.
-	 * 
+	 *
+	 * termDocs.read
+	 * 	  docs:  contains each doc that contains the term
+	 * 	  freqs: nums of times that the term occurs in that doc.
+	 *
 	 * @return the document matching the query or NO_MORE_DOCS if there are no
 	 *         more documents.
 	 */
@@ -117,6 +125,7 @@ final class SimpleScorer extends Scorer {
 	public int nextDoc() throws IOException {
 		pointer++;
 		if (pointer >= pointerMax) {
+			// Returns the number of entries read. Zero is only returned when the stream has been exhausted.
 			pointerMax = termDocs.read(docs, freqs); // refill buffer
 			if (pointerMax != 0) {
 				pointer = 0;
@@ -134,8 +143,27 @@ final class SimpleScorer extends Scorer {
 	public float score() {
 		assert doc != -1;
 		//TODO: implements BM25 ranking algorithm
-		
-		return idf * this.termDocs.freq();
+//		System.out.println("Score: idf = "+idf+", termDoc's = " + termDocs.freq());
+//		System.out.println("Score:"+(norms[pointer]));
+//		return 1;
+		try
+		{
+
+			assert freq == termDocs.freq();
+			float length = indexReader.document(doc).get("abstract").length();
+			System.out.println("Score':"+length);
+			float tf = freq;
+			float TF = (K1 + 1) * tf / (K1*(1-b+b*length/avgLength)+tf);
+//			return 1.0f;
+			return idf * TF;
+
+		}
+		catch(java.io.IOException e)
+		{
+			System.out.println("_Score:");
+			return idf * this.termDocs.freq();
+		}
+
 	}
 
 	/**

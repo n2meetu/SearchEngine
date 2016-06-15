@@ -87,20 +87,27 @@ public class SimpleQuery extends Query {
 		@Override
 		public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
 				boolean topScorer) throws IOException {
+			System.out.println("SimpleQuery:scorer entrance");
+
 			// only use the early exit condition if we have an atomic reader,
 			// because Lucene 3.x still supports non-atomic readers here:
 			if (hash != null && reader.getSequentialSubReaders() == null
 					&& !hash.contains(reader.hashCode())) {
+				System.out.println("SimpleQuery:scorer hash = Null");
 				return null;
 			}
 
 			TermDocs termDocs = reader.termDocs(term);
 
 			if (termDocs == null)
+			{
+				System.out.println("SimpleQuery:scorer termDocs = Null");
 				return null;
+			}
+
 
 			return new SimpleScorer(this, termDocs, similarity, reader
-					.norms(term.field()), idf,avgLength);
+					.norms(term.field()), idf,avgLength,reader);
 		}
 
 		@Override

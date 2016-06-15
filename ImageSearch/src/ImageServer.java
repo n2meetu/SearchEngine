@@ -6,9 +6,22 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.paoding.analysis.analyzer.PaodingAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.highlight.*;
+import org.apache.lucene.search.spell.PlainTextDictionary;
+import org.apache.lucene.search.spell.SpellChecker;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 import java.util.*;
 
@@ -19,14 +32,36 @@ import java.io.*;
 
 public class ImageServer extends HttpServlet{
 	public static final int PAGE_RESULT=10;
-	public static final String indexDir="/Users/apple/Desktop/2016_Spring/Search Engine/Projects/Project2/ImageSearch/forIndex";
+	public static final String indexDir="forIndex";
 	public static final String picDir="";
 	private ImageSearcher search=null;
+	private SpellChecker spellChecker;
+	private SimpleHTMLFormatter simpleHTMLFormatter;
+
 	public ImageServer(){
 		super();
-		System.out.println("ImageServer.java::ImageServer:"+indexDir);
 		search=new ImageSearcher(new String(indexDir+"/index"));
 		search.loadGlobals(new String(indexDir+"/global.txt"));
+
+
+		simpleHTMLFormatter = new SimpleHTMLFormatter("<span style=\"color:red;\">","</span>");
+
+
+//		highlighter = new Highlighter(simpleHTMLFormatter,)
+
+		Directory spellCheckDir;
+		IndexWriterConfig config=new IndexWriterConfig(Version.LUCENE_35, new StandardAnalyzer(Version.LUCENE_35));
+		try {
+			spellCheckDir = FSDirectory.open(new File("./SpellChecker"));
+			System.out.println(spellCheckDir.toString());
+			spellChecker = new SpellChecker(spellCheckDir);
+			PlainTextDictionary plainTextDictionary = new PlainTextDictionary(new File("./SpellChecker/spellchecker.txt"));
+			spellChecker.indexDictionary(plainTextDictionary,config,false);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public ScoreDoc[] showList(ScoreDoc[] results,int page){
@@ -56,41 +91,85 @@ public class ImageServer extends HttpServlet{
 			System.out.println("null query");
 			//request.getRequestDispatcher("/Image.jsp").forward(request, response);
 		}else{
-			System.out.println("In ImageServer.java");
-			System.out.println("\t queryString:"+queryString);
+			System.out.println(queryString);
 			System.out.println(URLDecoder.decode(queryString,"utf-8"));
 			System.out.println(URLDecoder.decode(queryString,"gb2312"));
+
+
 			String[] tags=null;
 			String[] paths=null;
-			TopDocs results=search.searchQuery(queryString, "abstract", 100);
-			System.out.println("\t Search abstart");
-			if (results != null) {
-				ScoreDoc[] hits = showList(results.scoreDocs, page);
-				if (hits != null) {
-					tags = new String[hits.length];
-					paths = new String[hits.length];
-					System.out.println("\t Hit length: "+ hits.length);
-					for (int i = 0; i < hits.length && i < PAGE_RESULT; i++) {
-						Document doc = search.getDoc(hits[i].doc);
-						System.out.println("doc=" + hits[i].doc + " score="
-								+ hits[i].score + " picPath= "
-								+ doc.get("picPath")+ " tag= "+doc.get("abstract"));
-						tags[i] = doc.get("abstract");
-						paths[i] = picDir + doc.get("picPath");
-					}
+			String[] highlightTags = null;
 
-				} else {
-					System.out.println("page null");
-				}
-			}else{
-				System.out.println("result null");
+			String[] rs = null;
+			if(!spellChecker.exist(queryString))
+			{
+				rs=spellChecker.suggestSimilar(queryString, 5);
+				System.out.println("Suggestion:"+ Arrays.toString(rs));
 			}
-			request.setAttribute("currentQuery",queryString);
-			request.setAttribute("currentPage", page);
-			request.setAttribute("imgTags", tags);
-			request.setAttribute("imgPaths", paths);
-			request.getRequestDispatcher("/imageshow.jsp").forward(request,
-					response);
+
+			TopDocs results=search.searchQuery(queryString, "abstract", 100);
+
+			Analyzer analyzer = new PaodingAnalyzer();
+			QueryParser queryParser = new QueryParser(Version.LUCENE_35,"abstract",analyzer);
+			try {
+				Query query = queryParser.parse(queryString);
+				QueryScorer scorer = new QueryScorer(query);
+				Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+				Highlighter highlighter = new Highlighter(simpleHTMLFormatter,scorer);
+				highlighter.setTextFragmenter(fragmenter);
+
+				if (results != null) {
+					ScoreDoc[] hits = showList(results.scoreDocs, page);
+					if (hits != null) {
+						tags = new String[hits.length];
+						paths = new String[hits.length];
+						highlightTags = new String[hits.length];
+						for (int i = 0; i < hits.length && i < PAGE_RESULT; i++) {
+							Document doc = search.getDoc(hits[i].doc);
+							System.out.println("doc=" + hits[i].doc + " score="
+									+ hits[i].score + " picPath= "
+									+ doc.get("picPath")+ " tag= "+doc.get("abstract"));
+							tags[i] = doc.get("abstract");
+							paths[i] = picDir + doc.get("picPath");
+
+							String value =doc.get("abstract");
+							if (value != null) {
+								TokenStream tokenStream = analyzer.tokenStream("abstract", new StringReader(value));
+								String highlightText = highlighter.getBestFragment(tokenStream, value);
+//								str=str+str1;
+								highlightTags[i] = highlightText;
+								System.out.println("Highlight:"+highlightText);
+							}
+						}
+
+					} else {
+						System.out.println("page null");
+					}
+				}
+				else
+				{
+					System.out.println("result null");
+				}
+				request.setAttribute("currentQuery",queryString);
+				request.setAttribute("currentPage", page);
+				request.setAttribute("imgTags", tags);
+				request.setAttribute("imgPaths", paths);
+				request.setAttribute("highlightTags",highlightTags);
+//			request.setAttribute("suggestions",Arrays.toString(rs));
+				// # SpellChecker!
+				request.setAttribute("suggestions",rs);
+				request.getRequestDispatcher("/imageshow.jsp").forward(request,
+						response);
+
+			}
+			catch (Exception e)
+			{
+
+			}
+
+
+
+
 		}
 	}
 

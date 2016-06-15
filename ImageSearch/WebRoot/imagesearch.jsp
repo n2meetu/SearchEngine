@@ -8,45 +8,38 @@ String path = request.getContextPath();
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
 System.out.println(path);
 System.out.println(basePath);
-System.out.println("In Imageseach.jsp");
 %>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>THU Search</title>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>搜索</title>
-<style type="text/css">
-<!--
-#Layer1 {
-	position:absolute;
-	left:489px;
-	top:326px;
-	width:404px;
-	height:29px;
-	z-index:1;
-}
-#Layer2 {
-	position:absolute;
-	left:480px;
-	top:68px;
-	width:446px;
-	height:152px;
-	z-index:2;
-}
--->
-</style>
-</head>
-<body>
-<div id="Layer1" style="top: 210px; left: 353px; width: 441px;">
-  <form id="form1" name="form1" method="get" action="servlet/ImageServer">
-    <label>
-      <input name="query" type="text" size="50" />
-    </label>
-    <label>
-    <input type="submit" name="Submit" value="搜索" />
-    </label>
-  </form>
-</div>
-</body>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <script type="text/javascript" src="js/jquery.min.js"></script>
+        <link type="text/css" href="css/font_google.css" rel="stylesheet" type="text/css"/> 
+        <link type="text/css" href="css/style_engine.css" rel="stylesheet" /> 
+        <link rel="shortcut icon" href="http://www.tsinghua.edu.cn/publish/newthu/images/favicon.ico" />
+        <script type="text/javascript" src="js/animate.js"></script>
+    </head>
+
+    <body>
+        <form  method="get" action="servlet/ImageServer">
+            <div class="search-wrapper">
+                <div class="input-holder">
+                    <input type="text" class="search-input" name="query" id = "transcript" placeholder="Type to search" />
+                    <!-- <img class="microphone" onclick="alert()" src="https://i.imgur.com/cHidSVu.gif"/> -->
+                    <button class="search-icon" onclick="searchToggle(this, event);">
+                        <span></span>
+                        <img class="microphone" onclick="startDictation(this,event)" src="https://i.imgur.com/cHidSVu.gif"/>
+                    </button>
+                </div>
+                <span class="close" onclick="searchToggle(this, event);"></span>
+                <div class="result-container">
+
+                </div>
+            </div>
+        </form>
+    </body>
+
 </html>

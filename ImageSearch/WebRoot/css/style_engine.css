@@ -1,5 +1,15 @@
 html,body {height: 100%;}
-body {padding: 0px; margin:0px; background:url(image.jpg) ; background-position: center; background-size: cover; background-attachment: fixed; background-repeat: no-repeat;}
+body {
+    padding: 0px; 
+    margin:0px; 
+    /*background:url(../sources/Dark-grey-background.jpg) ; */
+    background: linear-gradient(-20deg, #d0b782 20%, #a0cecf 80%);
+    font: 500 1.2em/1.2 'Roboto', sans-serif;
+    background-position: center; 
+    background-size: cover; 
+    background-attachment: fixed; 
+    background-repeat: no-repeat;
+}
 
 .search-wrapper {
     position: absolute;
@@ -23,6 +33,7 @@ body {padding: 0px; margin:0px; background:url(image.jpg) ; background-position:
     transition: all 0.3s ease-in-out;
 }
 .search-wrapper.active .input-holder {
+    margin-top: -300px;
     border-radius: 50px;
     width:450px;
     background: rgba(0,0,0,0.5);
@@ -158,6 +169,7 @@ body {padding: 0px; margin:0px; background:url(image.jpg) ; background-position:
     transition-delay: 0.2s;
 }
 .search-wrapper.active .close {
+    margin-top: -300px;
     right:-50px;
     -webkit-transform: rotate(45deg);
     -moz-transform: rotate(45deg);
@@ -189,16 +201,63 @@ body {padding: 0px; margin:0px; background:url(image.jpg) ; background-position:
 }
 .search-wrapper .result-container {
     width: 100%;
+    margin-top: 15px;
+    /*
     position: absolute;
     top:80px;
     left:0px;
     text-align: center;
     font-family: "Open Sans", Arial, Verdana;
-    font-size: 14px;
-    display:none;
-    color:#B7B7B7;
+    font-size: 14px;*/
+    /*display:visible;*/
+    /*color:#B7B7B7;*/
 }
 
+.search-wrapper .result-container div{
+    /*color: #B7B7B7;*/
+    font-family: "Helvetica Neue Light", "Lucida Grande", "Calibri", "Arial", sans-serif;
+    color: whitesmoke;
+    width: 75%;
+    height: 35px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 50px;
+    -webkit-transition: all 0.3s ease-in-out;
+    -moz-transition: all 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
+    line-height:35px;
+    padding-left:15px;
+
+    overflow:hidden;
+    /*text-align:center*/
+    /*border-radius:6px;*/
+    /*
+    position: absolute;
+    top:80px;
+    left:0px;
+    text-align: center;
+    font-family: "Open Sans", Arial, Verdana;
+    font-size: 14px;*/
+    /*display:visible;*/
+    /*color:#B7B7B7;*/
+}
+
+.search-wrapper .result-container.fade {
+    width: 100%;
+    display: none;
+    /*
+    position: absolute;
+    top:80px;
+    left:0px;
+    text-align: center;
+    font-family: "Open Sans", Arial, Verdana;
+    font-size: 14px;*/
+    /*display:visible;*/
+    /*color:#B7B7B7;*/
+}
 
 @media screen and (max-width: 560px) {
     .search-wrapper.active .input-holder {width:200px;}

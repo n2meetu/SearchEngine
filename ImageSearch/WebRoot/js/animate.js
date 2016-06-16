@@ -2,16 +2,19 @@ function searchToggle(obj, evt){
     var container = $(obj).closest('.search-wrapper');
 
     if(!container.hasClass('active')){
-
+          // container.find('.result-container').removeClass('fade');
+          // container.find('.result-container').addClass('fade');
           container.addClass('active');
           evt.preventDefault();
     }
     else if(container.hasClass('active') && $(obj).closest('.input-holder').length == 0){
           container.removeClass('active');
+          container.find('.result-container').addClass('fade');
+          // container.find('.result-container').removeClass('fade');
           // clear input
           container.find('.search-input').val('');
           // clear and hide result container when we press close
-          container.find('.result-container').fadeOut(100, function(){$(this).empty();});
+          // container.find('.result-container').fadeOut(100, function(){$(this).empty();});
     }
 }
 
@@ -26,13 +29,13 @@ function submitFn(obj, evt){
     //     _html += "<b>" + value + "</b>";
     // }
 
-    $(obj).find('.result-container').html('<span>' + _html + '</span>');
-    $(obj).find('.result-container').fadeIn(100);
+    // $(obj).find('.result-container').html('<span>' + _html + '</span>');
+    // $(obj).find('.result-container').fadeIn(100);
 
     evt.preventDefault();
 }
 
-function startDictation(obj,evt) {
+function startDictation(obj,evt,id) {
     if (window.hasOwnProperty('webkitSpeechRecognition')) 
     {
       var recognition = new webkitSpeechRecognition();
@@ -40,11 +43,12 @@ function startDictation(obj,evt) {
       recognition.continuous = true;
       recognition.interimResults = true;
       // recognition.lang = "en-US";
-      document.getElementById('transcript').placeholder = "Recording..."
+      document.getElementById(id).placeholder = "Recording...";
       recognition.start();
       recognition.onresult = function (e) 
       {
-        document.getElementById('transcript').value = e.results[0][0].transcript;
+          document.getElementById(id).placeholder = "";
+          document.getElementById(id).value = e.results[0][0].transcript;
         recognition.stop();
         // document.getElementById('labnol').submit();
       };

@@ -22,6 +22,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.wltea.analyzer.lucene.IKAnalyzer;
+import org.apache.lucene.queryParser.MultiFieldQueryParser;
+
+import java.util.Map;
+import java.util.HashMap;
+
 
 public class ImageSearcher {
 	private IndexReader reader;
@@ -31,7 +36,7 @@ public class ImageSearcher {
 	private float avgLength=1.0f;
 	
 	public ImageSearcher(String indexdir){
-//		analyzer = new IKAnalyzer();
+		//analyzer = new IKAnalyzer();
 		analyzer = new PaodingAnalyzer();
 //		QueryParser queryParser = new QueryParser(version.,"abstract",analyzer);
 
@@ -54,10 +59,11 @@ public class ImageSearcher {
 //			TokenStream ts = analyzer.tokenStream("", new StringReader(queryString));
 //			CharTermAttribute cta = ts.getAttribute(CharTermAttribute.class);
 //			while (ts.incrementToken()) {
-//				query.add(new SimpleQuery(new Term(field, cta.toString()), avgLength), BooleanClause.Occur.SHOULD);
+//				query.add(new SimpleQuery(new Term(field, cta.toString()), avgLeng
+// th), BooleanClause.Occur.SHOULD);
 //			}
 //			System.out.println("LLOLL");
-			Query query=new SimpleQuery(term,avgLength);
+			Query query=new SimpleQuery(term, avgLength);
 //			Query query=new SimpleMultiTermQuery(term,field,avgLength);
 
 			query.setBoost(1.0f);
@@ -71,6 +77,53 @@ public class ImageSearcher {
 		}
 		return null;
 	}
+
+    public TopDocs searchQuery(String queryString,String field,TopDocs topdocs,int maxnum){
+        try {
+            Term term=new Term(field,queryString);
+            Query query=new SimpleQuery(term, avgLength);
+            query.setBoost(1.0f);
+            TopDocs results = searcher.search(query, maxnum);
+            System.out.println(results);
+            return results;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public TopDocs searchQuery(String queryString,int maxnum){
+        try {
+            String[] fields = new String[9];
+            fields[0] = "title";
+            fields[1] = "h1";
+            fields[2] = "h2";
+            fields[3] = "h3";
+            fields[4] = "h4";
+            fields[5] = "h5";
+            fields[6] = "h6";
+            fields[7] = "content";
+            fields[8] = "localkey";
+            Map<String,Float> m = new HashMap<String,Float>();
+            m.put("title", 10f);
+            m.put("h1", 1f);
+            m.put("h2", 0.5f);
+            m.put("h3", 0.8f);
+            m.put("h4", 0.4f);
+            m.put("h5", 0.4f);
+            m.put("h6", 0.1f);
+            m.put("content", 0.06f);
+            m.put("localkey", 10f);
+            MultiFieldQueryParser mfparser = new MultiFieldQueryParser(Version.LUCENE_35,fields, analyzer,m);
+            Query query = mfparser.parse(queryString);
+            TopDocs results = searcher.search(query, maxnum);
+            System.out.println(results);
+            return results;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 	
 	public Document getDoc(int docID){
 		try{

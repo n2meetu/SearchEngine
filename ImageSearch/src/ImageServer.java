@@ -13,6 +13,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -22,12 +23,15 @@ import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+import org.wltea.analyzer.lucene.IKAnalyzer;
 
 import java.util.*;
 
 import java.math.*;
 import java.net.*;
 import java.io.*;
+import java.util.Map;
+import java.util.HashMap;
 
 
 public class ImageServer extends HttpServlet{
@@ -37,12 +41,35 @@ public class ImageServer extends HttpServlet{
 	private ImageSearcher search=null;
 	private SpellChecker spellChecker;
 	private SimpleHTMLFormatter simpleHTMLFormatter;
+	private Map<String,Float> pagerank = new HashMap<String,Float>();
 
 	public ImageServer(){
 		super();
 		search=new ImageSearcher(new String(indexDir+"/index"));
 		search.loadGlobals(new String(indexDir+"/global.txt"));
 
+		//read pagerank
+		try
+		{
+			FileReader fr=new FileReader("pagerank/rank.txt");
+			BufferedReader br=new BufferedReader(fr);
+			String url="";
+			String[] arrs=null;
+			while ((url=br.readLine())!=null) {
+				String rank = br.readLine();
+				pagerank.put(url, Float.parseFloat(rank));
+			}
+			System.out.println(pagerank.size());
+			br.close();
+			fr.close();
+		}
+		catch (Exception e)
+		{
+			//do nothing
+		}
+
+
+		//
 
 		simpleHTMLFormatter = new SimpleHTMLFormatter("<span style=\"color:red;\">","</span>");
 
@@ -76,6 +103,32 @@ public class ImageServer extends HttpServlet{
 		}
 		return ret;
 	}
+
+	public String toNomal(String s)
+	{
+		s = s.replace('\\','/');
+		s = s.replaceAll("mirror/","");
+		s = s.replaceAll("///","&");
+		return s;
+	}
+
+	class MyComparator implements Comparator<ScoreDoc>{
+		@Override
+		public int compare(ScoreDoc a,ScoreDoc b)
+		{
+			float as = a.score;
+			float bs = b.score;
+			String au = search.getDoc(a.doc).get("picPath");
+			au = toNomal(au);
+			String bu = search.getDoc(b.doc).get("picPath");
+			bu = toNomal(bu);
+			float big = 800000;
+			if(pagerank.containsKey(au)) as+=big*pagerank.get(au).floatValue();
+			if(pagerank.containsKey(bu)) bs+=big*pagerank.get(bu).floatValue();
+			return (as<bs)?1:-1;
+		}
+	}
+
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -99,6 +152,7 @@ public class ImageServer extends HttpServlet{
 			String[] tags=null;
 			String[] paths=null;
 			String[] highlightTags = null;
+			String[] content = null;
 
 			String[] rs = null;
 			if(!spellChecker.exist(queryString))
@@ -107,10 +161,12 @@ public class ImageServer extends HttpServlet{
 				System.out.println("Suggestion:"+ Arrays.toString(rs));
 			}
 
-			TopDocs results=search.searchQuery(queryString, "abstract", 100);
+			//TopDocs results=search.searchQuery(queryString, "content", 100);
+			TopDocs results=search.searchQuery(queryString, 100);
+			System.out.println("searchQuery end");
 
-			Analyzer analyzer = new PaodingAnalyzer();
-			QueryParser queryParser = new QueryParser(Version.LUCENE_35,"abstract",analyzer);
+			Analyzer analyzer = new IKAnalyzer();
+			QueryParser queryParser = new QueryParser(Version.LUCENE_35,"content",analyzer);
 			try {
 				Query query = queryParser.parse(queryString);
 				QueryScorer scorer = new QueryScorer(query);
@@ -118,27 +174,39 @@ public class ImageServer extends HttpServlet{
 				Highlighter highlighter = new Highlighter(simpleHTMLFormatter,scorer);
 				highlighter.setTextFragmenter(fragmenter);
 
+				ScoreDoc[] hits100 = results.scoreDocs;
+				Comparator cmp = new MyComparator();
+				Arrays.sort(hits100,cmp);
+
 				if (results != null) {
-					ScoreDoc[] hits = showList(results.scoreDocs, page);
+					ScoreDoc[] hits = showList(hits100, page);
 					if (hits != null) {
 						tags = new String[hits.length];
 						paths = new String[hits.length];
+						content = new String[hits.length];
 						highlightTags = new String[hits.length];
 						for (int i = 0; i < hits.length && i < PAGE_RESULT; i++) {
 							Document doc = search.getDoc(hits[i].doc);
 							System.out.println("doc=" + hits[i].doc + " score="
 									+ hits[i].score + " picPath= "
-									+ doc.get("picPath")+ " tag= "+doc.get("abstract"));
-							tags[i] = doc.get("abstract");
-							paths[i] = picDir + doc.get("picPath");
+									+ doc.get("picPath")+ " tag= "+doc.get("title"));
+							tags[i] = doc.get("title");
+							paths[i] = doc.get("picPath");
+							paths[i] = toNomal(paths[i]);
+							content[i] = doc.get("content");
+							content[i] = (content[i]==null)?"":content[i];
 
-							String value =doc.get("abstract");
+							String value =content[i];//doc.get("content");
 							if (value != null) {
-								TokenStream tokenStream = analyzer.tokenStream("abstract", new StringReader(value));
+								TokenStream tokenStream = analyzer.tokenStream("content", new StringReader(value));
 								String highlightText = highlighter.getBestFragment(tokenStream, value);
 //								str=str+str1;
+//								System.out.println()
 								highlightTags[i] = highlightText;
-								System.out.println("Highlight:"+highlightText);
+								highlightTags[i] = highlightTags[i]==null?"":highlightTags[i]+"...";
+//								content[i] = highlightText;
+
+//								System.out.println("Highlight:"+highlightText);
 							}
 						}
 
@@ -154,6 +222,7 @@ public class ImageServer extends HttpServlet{
 				request.setAttribute("currentPage", page);
 				request.setAttribute("imgTags", tags);
 				request.setAttribute("imgPaths", paths);
+				request.setAttribute("content", content);
 				request.setAttribute("highlightTags",highlightTags);
 //			request.setAttribute("suggestions",Arrays.toString(rs));
 				// # SpellChecker!

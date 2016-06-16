@@ -106,8 +106,8 @@ public class ImageIndexer {
 				Field h4Field  =   new  Field( "h4" ,h4Str,Field.Store.YES, Field.Index.ANALYZED);
 				Field h5Field  =   new  Field( "h5" ,h5Str,Field.Store.YES, Field.Index.ANALYZED);
 				Field h6Field  =   new  Field( "h6" ,h6Str,Field.Store.YES, Field.Index.ANALYZED);
-				Field keywordField  =   new  Field( "keyword" ,titleStr,Field.Store.YES, Field.Index.ANALYZED);
-				Field contentField  =   new  Field( "content" ,titleStr,Field.Store.YES, Field.Index.ANALYZED);
+				Field keywordField  =   new  Field( "keyword" ,keywordStr,Field.Store.YES, Field.Index.ANALYZED);
+				Field contentField  =   new  Field( "content" ,contentStr,Field.Store.YES, Field.Index.ANALYZED);
 				//averageLength += absString.length();
 				titleLength += titleStr.length();
 			    h1Length += h1Str.length();
@@ -164,7 +164,7 @@ public class ImageIndexer {
 	public static void main(String[] args) {
 		System.out.println("ImageIndexer.java::main()");
 		ImageIndexer indexer=new ImageIndexer("forIndex/index");
-		indexer.indexSpecialFile("D:\\learn4\\searchEngine\\hw\\final\\all_xml3.xml");
+		indexer.indexSpecialFile("D:\\learn4\\searchEngine\\hw\\final\\change.xml");
 		indexer.saveGlobals("forIndex/global.txt");
 	}
 }

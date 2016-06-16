@@ -150,7 +150,7 @@ final class SimpleScorer extends Scorer {
 		{
 
 			assert freq == termDocs.freq();
-			float length = indexReader.document(doc).get("abstract").length();
+			float length = indexReader.document(doc).get("title").length();
 			System.out.println("Score':"+length);
 			float tf = freq;
 			float TF = (K1 + 1) * tf / (K1*(1-b+b*length/avgLength)+tf);

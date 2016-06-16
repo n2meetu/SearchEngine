@@ -99,6 +99,7 @@ public class ImageServer extends HttpServlet{
 			String[] tags=null;
 			String[] paths=null;
 			String[] highlightTags = null;
+			String[] content = null;
 
 			String[] rs = null;
 			if(!spellChecker.exist(queryString))
@@ -107,10 +108,10 @@ public class ImageServer extends HttpServlet{
 				System.out.println("Suggestion:"+ Arrays.toString(rs));
 			}
 
-			TopDocs results=search.searchQuery(queryString, "abstract", 100);
+			TopDocs results=search.searchQuery(queryString, "title", 100);
 
 			Analyzer analyzer = new PaodingAnalyzer();
-			QueryParser queryParser = new QueryParser(Version.LUCENE_35,"abstract",analyzer);
+			QueryParser queryParser = new QueryParser(Version.LUCENE_35,"title",analyzer);
 			try {
 				Query query = queryParser.parse(queryString);
 				QueryScorer scorer = new QueryScorer(query);
@@ -123,18 +124,22 @@ public class ImageServer extends HttpServlet{
 					if (hits != null) {
 						tags = new String[hits.length];
 						paths = new String[hits.length];
+						content = new String[hits.length];
 						highlightTags = new String[hits.length];
 						for (int i = 0; i < hits.length && i < PAGE_RESULT; i++) {
 							Document doc = search.getDoc(hits[i].doc);
 							System.out.println("doc=" + hits[i].doc + " score="
 									+ hits[i].score + " picPath= "
-									+ doc.get("picPath")+ " tag= "+doc.get("abstract"));
-							tags[i] = doc.get("abstract");
-							paths[i] = picDir + doc.get("picPath");
+									+ doc.get("picPath")+ " tag= "+doc.get("title"));
+							tags[i] = doc.get("title");
+							paths[i] = doc.get("picPath");
+							paths[i] = paths[i].replace('\\','/');
+							paths[i] = paths[i].replaceAll("mirror/","");
+							content[i] = doc.get("content");
 
-							String value =doc.get("abstract");
+							String value =doc.get("title");
 							if (value != null) {
-								TokenStream tokenStream = analyzer.tokenStream("abstract", new StringReader(value));
+								TokenStream tokenStream = analyzer.tokenStream("title", new StringReader(value));
 								String highlightText = highlighter.getBestFragment(tokenStream, value);
 //								str=str+str1;
 								highlightTags[i] = highlightText;
@@ -154,6 +159,7 @@ public class ImageServer extends HttpServlet{
 				request.setAttribute("currentPage", page);
 				request.setAttribute("imgTags", tags);
 				request.setAttribute("imgPaths", paths);
+				request.setAttribute("content", content);
 				request.setAttribute("highlightTags",highlightTags);
 //			request.setAttribute("suggestions",Arrays.toString(rs));
 				// # SpellChecker!
